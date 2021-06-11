@@ -33,6 +33,9 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.utils.dates import days_ago
 
+# Minio to access files from users
+from minio import Minio
+
 # [END import_module]
 
 def get_secret(secret_name):
@@ -44,6 +47,12 @@ def get_secret(secret_name):
 
 minio_secret = get_secret('minio-secret')
 print(minio_secret)
+
+client = Minio("minio", minio_secret[0], minio_secret[1])
+
+buckets = client.list_buckets()
+for bucket in buckets:
+    print(bucket.name, bucket.creation_date)
 
 # [START default_args]
 # These args will get passed on to each operator
