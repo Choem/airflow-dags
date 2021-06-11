@@ -39,12 +39,12 @@ from minio import Minio
 
 # [END import_module]
 
-def get_secret(secret_name):
-    secrets_dir = Path('/var/airflow/secrets')
-    secret_path = secrets_dir / secret_name
-    assert secret_path.exists(), f'could not find {secret_name} at {secret_path}'
-    secret_data = secret_path.read_text().strip()
-    return secret_data
+# def get_secret(secret_name):
+#     secrets_dir = Path('/var/airflow/secrets')
+#     secret_path = secrets_dir / secret_name
+#     assert secret_path.exists(), f'could not find {secret_name} at {secret_path}'
+#     secret_data = secret_path.read_text().strip()
+#     return secret_data
 
 # minio_secret = get_secret('minio-secret')
 # print(minio_secret)
@@ -61,7 +61,7 @@ def get_secret(secret_name):
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'email': ['airflow@example.com'],
+    'email': ['admin-user@wavyhealth.com'],
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
@@ -95,10 +95,17 @@ with DAG(
 
     # t1 example task
     # [START basic_task]
-    t1 = BashOperator(
-        task_id='echo',
-        bash_command='echo "this is an example task"',
+    def print_context(ds, **kwargs):
+        """Print the Airflow context and ds variable from the context."""
+        pprint(kwargs)
+        print(ds)
+        return 'Whatever you return gets printed in the logs'
+
+    run_this = PythonOperator(
+        task_id='print_the_context',
+        python_callable=print_context,
     )
+
     # [END basic_task]
-    t1
+    run_this
 # [END tutorial]
