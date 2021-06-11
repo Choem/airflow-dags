@@ -23,7 +23,6 @@ Documentation that goes along with the Airflow tutorial located
 """
 # [START tutorial]
 # [START import_module]
-import pprint
 from pathlib import Path
 from datetime import timedelta
 from textwrap import dedent
@@ -98,7 +97,6 @@ with DAG(
     # [START basic_task]
     def print_context(ds, **kwargs):
         """Print the Airflow context and ds variable from the context."""
-        pprint(kwargs)
         print(ds)
         return 'Whatever you return gets printed in the logs'
 
