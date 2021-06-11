@@ -5,7 +5,7 @@ from textwrap import dedent
 from airflow import DAG
 
 # Operators; we need this to operate!
-from airflow.operators.python_operator import PythonOperator
+from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.utils.dates import days_ago
 
 default_args = {
