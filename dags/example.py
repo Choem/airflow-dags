@@ -46,7 +46,7 @@ def get_secret(secret_name):
     secret_data = secret_path.read_text().strip()
     return secret_data
 
-# minio_secret = get_secret('minio-secret').split("=")
+# minio_secret = get_secret('minio-secret')
 # print(minio_secret)
 
 # client = Minio("minio", minio_secret[1], minio_secret[3])
@@ -84,66 +84,21 @@ default_args = {
 
 # [START instantiate_dag]
 with DAG(
-    'tutorial',
+    'example',
     default_args=default_args,
-    description='A simple tutorial DAG',
+    description='A simple example DAG',
     schedule_interval=timedelta(days=1),
     start_date=days_ago(2),
     tags=['example'],
 ) as dag:
     # [END instantiate_dag]
 
-    # t1, t2 and t3 are examples of tasks created by instantiating operators
+    # t1 example task
     # [START basic_task]
     t1 = BashOperator(
-        task_id='print_date',
-        bash_command='date',
-    )
-
-    t2 = BashOperator(
-        task_id='sleep',
-        depends_on_past=False,
-        bash_command='sleep 5',
-        retries=3,
+        task_id='echo',
+        bash_command='echo "this is an example task"',
     )
     # [END basic_task]
-
-    # [START documentation]
-    t1.doc_md = dedent(
-        """\
-    #### Task Documentation
-    You can document your task using the attributes `doc_md` (markdown),
-    `doc` (plain text), `doc_rst`, `doc_json`, `doc_yaml` which gets
-    rendered in the UI's Task Instance Details page.
-    ![img](http://montcs.bloomu.edu/~bobmon/Semesters/2012-01/491/import%20soul.png)
-
-    """
-    )
-
-    dag.doc_md = __doc__  # providing that you have a docstring at the beginning of the DAG
-    dag.doc_md = """
-    This is a documentation placed anywhere
-    """  # otherwise, type it like this
-    # [END documentation]
-
-    # [START jinja_template]
-    templated_command = dedent(
-        """
-    {% for i in range(5) %}
-        echo "{{ ds }}"
-        echo "{{ macros.ds_add(ds, 7)}}"
-        echo "{{ params.my_param }}"
-    {% endfor %}
-    """
-    )
-
-    t3 = BashOperator(
-        task_id='templated',
-        depends_on_past=False,
-        bash_command=templated_command,
-        params={'my_param': 'Parameter I passed in'},
-    )
-    # [END jinja_template]
-
-    t1 >> [t2, t3]
+    t1
 # [END tutorial]
