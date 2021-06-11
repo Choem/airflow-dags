@@ -42,8 +42,8 @@ def get_secret(secret_name):
     secret_data = secret_path.read_text().strip()
     return secret_data
 
-example_secret = get_secret('example-secret')
-print(example_secret)
+minio_secret = get_secret('minio-secret')
+print(minio_secret)
 
 # [START default_args]
 # These args will get passed on to each operator
