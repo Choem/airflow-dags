@@ -35,7 +35,7 @@ with DAG(
         image_pull_policy="Always",
         name='test_1',
         task_id='test_1',
-        is_delete_operator_pod=False,
+        is_delete_operator_pod=True,
         get_logs=True,
         dag=dag
     )
@@ -49,7 +49,7 @@ with DAG(
         image_pull_policy="Always",
         name='test_2',
         task_id='test_2',
-        is_delete_operator_pod=False,
+        is_delete_operator_pod=True,
         get_logs=True,
         dag=dag
     )
