@@ -23,6 +23,7 @@ Documentation that goes along with the Airflow tutorial located
 """
 # [START tutorial]
 # [START import_module]
+import pprint
 from pathlib import Path
 from datetime import timedelta
 from textwrap import dedent
