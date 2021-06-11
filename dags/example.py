@@ -95,16 +95,29 @@ with DAG(
 
     # t1 example task
     # [START basic_task]
-    def print_context(ds, **kwargs):
-        """Print the Airflow context and ds variable from the context."""
-        print(ds)
-        return 'Whatever you return gets printed in the logs'
+    def t1_callable():
+        print("this is task 1")
 
-    run_this = PythonOperator(
-        task_id='print_the_context',
-        python_callable=print_context,
+    t1 = PythonOperator(
+        task_id='task_1',
+        python_callable=t1_callable,
     )
 
+    def t2_callable():
+        print("this is task 2")
+
+    t2 = PythonOperator(
+        task_id='task_2',
+        python_callable=t2_callable,
+    )
+
+    def t3_callable():
+        print("this is task 3")
+
+    t3 = PythonOperator(
+        task_id='task_3',
+        python_callable=t3_callable,
+    )
     # [END basic_task]
-    run_this
+    t1 >> [t2, t3]
 # [END tutorial]
