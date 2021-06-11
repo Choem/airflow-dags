@@ -87,7 +87,7 @@ with DAG(
     'example',
     default_args=default_args,
     description='A simple example DAG',
-    schedule_interval=timedelta(days=1),
+    schedule_interval='1/5 * * * *',
     start_date=days_ago(2),
     tags=['example'],
 ) as dag:
