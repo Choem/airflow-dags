@@ -35,6 +35,16 @@ from airflow.utils.dates import days_ago
 
 # [END import_module]
 
+def get_secret(secret_name):
+    secrets_dir = Path('/var/airflow/secrets')
+    secret_path = secrets_dir / secret_name
+    assert secret_path.exists(), f'could not find {secret_name} at {secret_path}'
+    secret_data = secret_path.read_text().strip()
+    return secret_data
+
+example_secret = get_secret('example-secret')
+print(example_secret)
+
 # [START default_args]
 # These args will get passed on to each operator
 # You can override them on a per-task basis during operator initialization
