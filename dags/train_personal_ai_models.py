@@ -66,7 +66,6 @@ with DAG(
         task_instance = kwargs['task_instance']
         value = task_instance.xcom_pull(task_ids='t1', key='test')
         print(value)
-        print(t1[0] * t[1])
 
     t2 = PythonOperator(
         task_id='t2',
