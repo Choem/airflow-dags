@@ -8,7 +8,7 @@ from airflow import DAG
 # Operators; we need this to operate!
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.operators.python_operator import PythonOperator
-from airflow.providers.postgres.operators.postgres import PostgresOperator
+from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.dates import days_ago
 
 def get_secret(secret_name):
@@ -56,7 +56,7 @@ with DAG(
     'train_and_save_personal_ai_models',
     default_args=default_args,
     description='A DAG to train and save personal AI models',
-    schedule_interval='* 1 * * *',
+    schedule_interval='@once',
     start_date=days_ago(2),
     tags=['train', 'save', 'ai_models', 'kuberenetes'],
 ) as dag:
