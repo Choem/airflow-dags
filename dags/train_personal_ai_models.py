@@ -123,9 +123,9 @@ with DAG(
         for filtered_patient in filtered_patients:
             print('b')
             print(filtered_patient[0])
-            objects = client.list_objects(str(filtered_patient[0]), prefix='user-')
+            objects = client.list_objects('%s/' % str(filtered_patient[0]), prefix='user-')
             print('c')
-            if len(objects) > 0:
+            if len(list(objects)) > 0:
                 print('d')
                 filtered_patients_with_logs.append(filtered_patient)
         print(len(filtered_patients_with_logs))
