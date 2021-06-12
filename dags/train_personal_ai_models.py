@@ -74,11 +74,6 @@ def get_minio_client():
         secure=False
     )
 
-client = get_minio_client()
-buckets = client.list_buckets()
-for bucket in buckets:
-    print(bucket.name, bucket.creation_date)
-
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -125,10 +120,11 @@ with DAG(
         filtered_patients_with_logs = []
         client = get_minio_client()
         for filtered_patient in filtered_patients:
+            print(filtered_patient[0])
             objects = client.list_objects(str(filtered_patient[0]), prefix='user-')
             if len(objects) > 0:
                 filtered_patients_with_logs.append(filtered_patient)
-
+        print(len(filtered_patients_with_logs))
         task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients_with_logs)))
 
     get_all_filtered_patients = PythonOperator(
