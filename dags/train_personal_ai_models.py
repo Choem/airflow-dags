@@ -68,7 +68,9 @@ def days_between(d1, d2):
 
 def get_all_filtered_patients(**kwargs):
     task_instance = kwargs['task_instance']
-    patients = map(lambda patient: json.loads(patient), task_instance.xcom_pull(task_ids='get_all_patients', key='patients'))
+    patients = task_instance.xcom_pull(task_ids='get_all_patients', key='patients')
+    print(list(patients))
+    patients = map(lambda patient: json.loads(patient), patients)
     print(patients)
     filtered_patients = map(lambda patient: days_between(patient[0], datetime.now()) > 7, patients)
     print(filtered_patients)
