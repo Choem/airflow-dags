@@ -53,8 +53,7 @@ with DAG(
 
     def t1_callable(**kwargs):
         task_instance = kwargs['task_instance']
-        task_instance.xcom_push(key='test', value='kek')
-        return [2, 3]
+        task_instance.xcom_push(key='test', value=[1, "tweee", { "kek": "kek" }])
 
     t1 = PythonOperator(
         task_id='t1',
