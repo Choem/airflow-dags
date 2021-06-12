@@ -8,6 +8,7 @@ from airflow import DAG
 # Operators; we need this to operate!
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from airflow.utils.dates import days_ago
 
 def get_secret(secret_name):
@@ -40,6 +41,17 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
+def get_all_patients():
+    sql = "SELECT * FROM patient"
+    pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
+    connection = pg_hook.get_conn()
+    cursor = connection.cursor()
+    cursor.execute(sql)
+    sources = cursor.fetchall()
+    for source in sources:
+        print("Source: {0} - activated: {1}".format(source[0], source[1]))
+    return sources
+
 with DAG(
     'train_and_save_personal_ai_models',
     default_args=default_args,
@@ -51,28 +63,33 @@ with DAG(
     # 1. [PythonOperator] Get patients 
     patients = []
 
-    def t1_callable(**kwargs):
-        task_instance = kwargs['task_instance']
-        task_instance.xcom_push(key='test', value=[1, "tweee", { "kek": "kek" }])
-
-    t1 = PythonOperator(
-        task_id='t1',
-        provide_context=True,
-        python_callable=t1_callable,
-        dag=dag
+    hook_task = PythonOperator(
+        task_id='hook_task',
+        python_callable=get_all_patients
     )
 
-    def t2_callable(**kwargs):
-        task_instance = kwargs['task_instance']
-        value = task_instance.xcom_pull(task_ids='t1', key='test')
-        print(value)
+    # def t1_callable(**kwargs):
+    #     task_instance = kwargs['task_instance']
+    #     task_instance.xcom_push(key='test', value=[1, "tweee", { "kek": "kek" }])
 
-    t2 = PythonOperator(
-        task_id='t2',
-        provide_context=True,
-        python_callable=t2_callable,
-        dag=dag
-    )
+    # t1 = PythonOperator(
+    #     task_id='t1',
+    #     provide_context=True,
+    #     python_callable=t1_callable,
+    #     dag=dag
+    # )
+
+    # def t2_callable(**kwargs):
+    #     task_instance = kwargs['task_instance']
+    #     value = task_instance.xcom_pull(task_ids='t1', key='test')
+    #     print(value)
+
+    # t2 = PythonOperator(
+    #     task_id='t2',
+    #     provide_context=True,
+    #     python_callable=t2_callable,
+    #     dag=dag
+    # )
 
     # # 2. [PythonOperator] Get logs from the patients in user buckets
     # logs = []
@@ -104,5 +121,5 @@ with DAG(
 
 
     # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
-    t1 >> t2
+    hook_task
 
