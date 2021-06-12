@@ -71,6 +71,7 @@ def get_minio_client():
         "minio:9000",
         access_key='admin-user',
         secret_key='admin-user',
+        secure=False
     )
 
 client = get_minio_client()
