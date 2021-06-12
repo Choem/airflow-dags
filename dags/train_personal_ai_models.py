@@ -63,6 +63,7 @@ class DateTimeEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 def get_minio_client():
+    Path("/opt/airflow/secrest/minio-secret")
     access_key = Path("/opt/airflow/secrets/minio-secret/accesskey").read_text().strip()
     secret_key = Path("/opt/airflow/secrets/minio-secret/secretkey").read_text().strip()
 
