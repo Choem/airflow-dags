@@ -57,7 +57,7 @@ def get_all_patients(**kwargs):
     cursor = connection.cursor()
     cursor.execute(sql)
     patients = cursor.fetchall()
-    print(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patient))
+    print(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients))
     task_instance = kwargs['task_instance']
     task_instance.xcom_push(key='patients', value=map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients))
 
