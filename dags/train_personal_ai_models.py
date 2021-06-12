@@ -63,14 +63,14 @@ class DateTimeEncoder(json.JSONEncoder):
             return json.JSONEncoder.default(self, obj)
 
 def get_minio_client():
-    Path("/opt/airflow/secrets/minio-secret")
+    # TODO: Bug in Airflow worker pod, secret dir and files are created but not populated
     access_key = Path("/opt/airflow/secrets/minio-secret/accesskey").read_text().strip()
     secret_key = Path("/opt/airflow/secrets/minio-secret/secretkey").read_text().strip()
 
     return Minio(
         "minio",
-        access_key=access_key,
-        secret_key=secret_key,
+        access_key='admin-user',
+        secret_key='admin-user',
     )
 
 client = get_minio_client()
