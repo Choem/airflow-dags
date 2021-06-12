@@ -68,7 +68,7 @@ def get_minio_client():
     # secret_key = Path("/opt/airflow/secrets/minio-secret/secretkey").read_text().strip()
 
     return Minio(
-        "minio",
+        "minio:9000",
         access_key='admin-user',
         secret_key='admin-user',
     )
