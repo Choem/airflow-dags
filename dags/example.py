@@ -39,21 +39,25 @@ from minio import Minio
 
 # [END import_module]
 
-# def get_secret(secret_name):
-#     secrets_dir = Path('/var/airflow/secrets')
-#     secret_path = secrets_dir / secret_name
-#     assert secret_path.exists(), f'could not find {secret_name} at {secret_path}'
-#     secret_data = secret_path.read_text().strip()
-#     return secret_data
+def get_secret(secret_name):
+    secrets_dir = Path('/opt/airflow/secrets')
+    secret_path = secrets_dir / secret_name
+    assert secret_path.exists(), f'could not find {secret_name} at {secret_path}'
+    files = {}
+    for entity in Path(secret_path).iterdir():
+        if entity.is_file():
+            pair = entity.read_text().strip().split('=')
+            files[pair[0]] = pair[1]
+    return files
 
-# minio_secret = get_secret('minio-secret')
-# print(minio_secret)
+minio_secret = get_secret('minio-secret')
+print(minio_secret)
 
-# client = Minio("minio", minio_secret[1], minio_secret[3])
+client = Minio("minio", minio_secret[1], minio_secret[3])
 
-# buckets = client.list_buckets()
-# for bucket in buckets:
-#     print(bucket.name, bucket.creation_date)
+buckets = client.list_buckets()
+for bucket in buckets:
+    print(bucket.name, bucket.creation_date)
 
 # [START default_args]
 # These args will get passed on to each operator
