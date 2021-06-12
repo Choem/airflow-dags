@@ -41,7 +41,7 @@ default_args = {
 }
 
 with DAG(
-    'Train and save personal AI models',
+    'train_and_save_personal_ai_models',
     default_args=default_args,
     description='A DAG to train and save personal AI models',
     schedule_interval='* 1 * * *',
