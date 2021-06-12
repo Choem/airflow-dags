@@ -123,7 +123,7 @@ with DAG(
         for filtered_patient in filtered_patients:
             print('b')
             print(filtered_patient[0])
-            objects = client.list_objects('%s/' % str(filtered_patient[0]), prefix='user-')
+            objects = client.list_objects('user-%s' % str(filtered_patient[0]))
             print('c')
             if len(list(objects)) > 0:
                 print('d')
