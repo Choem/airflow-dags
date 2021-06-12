@@ -59,7 +59,7 @@ def get_all_patients(**kwargs):
     patients = cursor.fetchall()
     print(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patient))
     task_instance = kwargs['task_instance']
-    task_instance.xcom_push(key='patients', value=map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patient))
+    task_instance.xcom_push(key='patients', value=map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients))
 
 def days_between(d1, d2):
     d1 = datetime.strptime(d1, "%Y-%m-%d")
