@@ -13,32 +13,52 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.dates import days_ago
 
+
+class Patient(object):
+    __type__ = 'Patient'
+
+    def __init__(self, id, last_checked):
+        self.id = id
+        self.last_checked = last_checked
+
+    def to_dict(self):
+        return { 
+            'id': self.id, 
+            'last_checked': self.last_checked 
+        }
+
+class DateTimeDecoder(json.JSONDecoder):
+    def __init__(self, *args, **kargs):
+        json.JSONDecoder.__init__(self, object_hook=self.dict_to_object,
+                             *args, **kargs)
+    
+    def dict_to_object(self, d): 
+        if '__type__' not in d:
+            return d
+
+        type = d.pop('__type__')
+        try:
+            dateobj = datetime(**d)
+            return dateobj
+        except:
+            d['__type__'] = type
+            return d
+
 class DateTimeEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, datetime):
-            return o.isoformat()
-
-        return json.JSONEncoder.default(self, o)
-
-def get_secret(secret_name):
-    secrets_dir = Path('/opt/airflow/secrets')
-    secret_path = secrets_dir / secret_name
-    assert secret_path.exists(), f'could not find {secret_name} at {secret_path}'
-    files = {}
-    for entity in Path(secret_path).iterdir():
-        if entity.is_file():
-            pair = entity.read_text().strip().split('=')
-            files[pair[0]] = pair[1]
-    return files
-
-# minio_secret = get_secret('minio-secret')
-# print(minio_secret)
-
-# client = Minio("minio", minio_secret['accessKey'], minio_secret['secretKey'])
-
-# buckets = client.list_buckets()
-# for bucket in buckets:
-#     print(bucket.name, bucket.creation_date)
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return {
+                '__type__' : 'datetime',
+                'year' : obj.year,
+                'month' : obj.month,
+                'day' : obj.day,
+                'hour' : obj.hour,
+                'minute' : obj.minute,
+                'second' : obj.second,
+                'microsecond' : obj.microsecond,
+            }   
+        else:
+            return json.JSONEncoder.default(self, obj)
 
 default_args = {
     'owner': 'airflow',
@@ -58,7 +78,6 @@ def get_all_patients(**kwargs):
     cursor.execute(sql)
     patients = cursor.fetchall()
     task_instance = kwargs['task_instance']
-    print(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients))
     task_instance.xcom_push(key='patients', value=map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients))
 
 def days_between(d1, d2):
@@ -68,9 +87,7 @@ def days_between(d1, d2):
 
 def get_all_filtered_patients(**kwargs):
     task_instance = kwargs['task_instance']
-    patients = task_instance.xcom_pull(task_ids='get_all_patients', key='patients')
-    print(list(patients))
-    patients = map(lambda patient: json.loads(patient), patients)
+    patients = map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_patients', key='patients'))
     print(patients)
     filtered_patients = map(lambda patient: days_between(patient[0], datetime.now()) > 7, patients)
     print(filtered_patients)
