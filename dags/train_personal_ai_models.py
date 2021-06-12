@@ -86,6 +86,8 @@ with DAG(
         cursor = connection.cursor()
         cursor.execute(sql)
         patients = cursor.fetchall()
+        cursor.close()
+        connection.close()
         task_instance = kwargs['task_instance']
         task_instance.xcom_push(key='patients', value=list(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients)))
 
@@ -116,6 +118,9 @@ with DAG(
         connection = pg_hook.get_conn()
         cursor = connection.cursor()
         cursor.execute(sql)
+        connection.commit()
+        cursor.close()
+        connection.close()
 
     mark_patients = PythonOperator(
         task_id='mark_patients',
