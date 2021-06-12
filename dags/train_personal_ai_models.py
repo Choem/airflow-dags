@@ -119,16 +119,11 @@ with DAG(
 
         filtered_patients_with_logs = []
         client = get_minio_client()
-        print('a')
         for filtered_patient in filtered_patients:
-            print('b')
-            print(filtered_patient[0])
             objects = client.list_objects('user-%s' % str(filtered_patient[0]))
-            print('c')
             if len(list(objects)) > 0:
-                print('d')
                 filtered_patients_with_logs.append(filtered_patient)
-        print(len(filtered_patients_with_logs))
+
         task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients_with_logs)))
 
     get_all_filtered_patients = PythonOperator(
@@ -136,25 +131,24 @@ with DAG(
         python_callable=get_all_filtered_patients
     )
 
-    # 3. [PythonOperator] Preprocess data for each patient
-    # processed_logs = []
-
     # 4. [KubernetesPodOperator] Train and save workflow
-    # processing_tasks = []
-    # for patient in processed_patients:
-    #     processing_tasks.append(KubernetesPodOperator(
-    #         task_id='train_and_save_personal_model',
-    #         name='Train and save a personal AI model for a patient',
-    #         namespace='default',
-    #         image="python",
-    #         cmds=["python", "-c"],
-    #         arguments=["print('1')"],
-    #         labels={"foo": "bar"},
-    #         image_pull_policy="Always",
-    #         is_delete_operator_pod=True,
-    #         get_logs=True,
-    #         dag=dag
-    #     ))
+    processing_tasks = []
+    for patient in "{{ task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients') }}":
+        processing_tasks.append(KubernetesPodOperator(
+            task_id='train_and_save_personal_model',
+            name='Train and save a personal model for a patient',
+            namespace='default',
+            envs={ 
+                'USER_ID': str(patient[0]),
+                'MINIO_ACCESS_KEY': 'admin-user',
+                'MINIO_SECRET_KEY': 'admin-user' 
+            },
+            image="choem/train_and_save_personal_model:v1",
+            image_pull_policy="Always",
+            is_delete_operator_pod=True,
+            get_logs=True,
+            dag=dag
+        ))
 
     # 5. [PythonOperator] Mark each patient with current date
     def mark_patients(**kwargs):
@@ -177,5 +171,5 @@ with DAG(
 
 
     # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
-    get_all_patients >> get_all_filtered_patients >> mark_patients
+    get_all_patients >> get_all_filtered_patients >> processing_tasks >> mark_patients
 
