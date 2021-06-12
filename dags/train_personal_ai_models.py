@@ -13,6 +13,8 @@ from airflow.operators.bash_operator import BashOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.dates import days_ago
 
+from minio import Minio
+
 
 class Patient(object):
     __type__ = 'Patient'
@@ -60,6 +62,21 @@ class DateTimeEncoder(json.JSONEncoder):
         else:
             return json.JSONEncoder.default(self, obj)
 
+def get_minio_client():
+    access_key = Path("/opt/airflow/secrets/minio-secret/accesskey").read_text().strip()
+    secret_key = Path("/opt/airflow/secrets/minio-secret/secretkey").read_text().strip()
+
+    return Minio(
+        "minio",
+        access_key=access_key,
+        secret_key=secret_key,
+    )
+
+client = get_minio_client()
+buckets = client.list_buckets()
+for bucket in buckets:
+    print(bucket.name, bucket.creation_date)
+
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -96,19 +113,48 @@ with DAG(
         python_callable=get_all_patients
     )
 
-    # # 2. [PythonOperator] Get filtered patients
+    # 2. [PythonOperator] Get filtered patients
     def get_all_filtered_patients(**kwargs):
         task_instance = kwargs['task_instance']
         patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_patients', key='patients')))
         # filtered_patients = list(map(lambda patient: (datetime.now() - patient[1]).days >= 7, patients))
         filtered_patients = patients
-        task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients)))
+
+        filtered_patients_with_logs = []
+        client = get_minio_client()
+        for filtered_patient in filtered_patients:
+            objects = client.list_objects(str(filtered_patient[0]), prefix='user-')
+            if len(objects) > 0:
+                filtered_patients_with_logs.append(filtered_patient)
+
+        task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients_with_logs)))
 
     get_all_filtered_patients = PythonOperator(
         task_id='get_all_filtered_patients',
         python_callable=get_all_filtered_patients
     )
 
+    # 3. [PythonOperator] Preprocess data for each patient
+    # processed_logs = []
+
+    # 4. [KubernetesPodOperator] Train and save workflow
+    # processing_tasks = []
+    # for patient in processed_patients:
+    #     processing_tasks.append(KubernetesPodOperator(
+    #         task_id='train_and_save_personal_model',
+    #         name='Train and save a personal AI model for a patient',
+    #         namespace='default',
+    #         image="python",
+    #         cmds=["python", "-c"],
+    #         arguments=["print('1')"],
+    #         labels={"foo": "bar"},
+    #         image_pull_policy="Always",
+    #         is_delete_operator_pod=True,
+    #         get_logs=True,
+    #         dag=dag
+    #     ))
+
+    # 5. [PythonOperator] Mark each patient with current date
     def mark_patients(**kwargs):
         task_instance = kwargs['task_instance']
         filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
@@ -126,31 +172,6 @@ with DAG(
         task_id='mark_patients',
         python_callable=mark_patients
     )
-
-    # # 3. [PythonOperator] Filter patients if they have no new files
-    # processed_patients = []
-
-    # # 4. [PythonOperator] Preprocess data for each patient
-    # processed_logs = []
-
-    # # 5. [KubernetesPodOperator] Train and save workflow
-    # processing_tasks = []
-    # for patient in processed_patients:
-    #     processing_tasks.append(KubernetesPodOperator(
-    #         task_id='train_and_save_personal_model',
-    #         name='Train and save a personal AI model for a patient',
-    #         namespace='default',
-    #         image="python",
-    #         cmds=["python", "-c"],
-    #         arguments=["print('1')"],
-    #         labels={"foo": "bar"},
-    #         image_pull_policy="Always",
-    #         is_delete_operator_pod=True,
-    #         get_logs=True,
-    #         dag=dag
-    #     ))
-
-    # # 6. [PythonOperator] Mark each patient with current date
 
 
     # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
