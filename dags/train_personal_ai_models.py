@@ -110,7 +110,7 @@ with DAG(
     def mark_patients(**kwargs):
         task_instance = kwargs['task_instance']
         filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
-        params = list(map(lambda filtered_patient: filtered_patient[0], filtered_patients))
+        params = list(map(lambda filtered_patient: str(filtered_patient[0]), filtered_patients))
         sql = "UPDATE patient SET last_checked = CURRENT_TIMESTAMP WHERE id IN (%s);" % ','.join(params)
         pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
         connection = pg_hook.get_conn()
