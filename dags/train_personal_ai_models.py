@@ -50,7 +50,7 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
-def get_all_patients():
+def get_all_patients(**kwargs):
     sql = "SELECT id, last_checked FROM patient;"
     pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
     connection = pg_hook.get_conn()
