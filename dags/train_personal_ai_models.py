@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from datetime import timedelta, datetime
 from textwrap import dedent
@@ -11,6 +12,13 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.dates import days_ago
+
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, datetime):
+            return o.isoformat()
+
+        return json.JSONEncoder.default(self, o)
 
 def get_secret(secret_name):
     secrets_dir = Path('/opt/airflow/secrets')
@@ -49,9 +57,9 @@ def get_all_patients():
     cursor = connection.cursor()
     cursor.execute(sql)
     patients = cursor.fetchall()
-    print(patients)
+    print(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patient))
     task_instance = kwargs['task_instance']
-    task_instance.xcom_push(key='patients', value=patients)
+    task_instance.xcom_push(key='patients', value=map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patient))
 
 def days_between(d1, d2):
     d1 = datetime.strptime(d1, "%Y-%m-%d")
@@ -63,7 +71,7 @@ def get_all_filtered_patients(**kwargs):
     patients = task_instance.xcom_pull(task_ids='get_all_patients', key='patients')
     filtered_patients = map(lambda patient: days_between(patient[0], datetime.now()) > 7, patients)
     print(filtered_patients)
-    task_instance.xcom_push(key='filtered_patients', value=filtered_patients)
+    task_instance.xcom_push(key='filtered_patients', value=map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients))
 
 def mark_patients(**kwargs):
     task_instance = kwargs['task_instance']
