@@ -70,40 +70,6 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
-def get_all_patients(**kwargs):
-    sql = "SELECT id, last_checked FROM patient;"
-    pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
-    connection = pg_hook.get_conn()
-    cursor = connection.cursor()
-    cursor.execute(sql)
-    patients = cursor.fetchall()
-    task_instance = kwargs['task_instance']
-    task_instance.xcom_push(key='patients', value=list(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients)))
-
-def days_between(d1, d2):
-    d1 = datetime.strptime(d1, "%Y-%m-%d")
-    d2 = datetime.strptime(d2, "%Y-%m-%d")
-    return abs((d2 - d1).days)
-
-def get_all_filtered_patients(**kwargs):
-    task_instance = kwargs['task_instance']
-    patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_patients', key='patients')))
-    filtered_patients = list(map(lambda patient: (datetime.now() - patient[1]).days >= 7, patients))
-    for filtered_patient in filtered_patients: print(filtered_patient)
-    task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients)))
-
-def mark_patients(**kwargs):
-    task_instance = kwargs['task_instance']
-    filtered_patients = task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')
-    placeholder = '?'
-    placeholders = ', '.join(placeholder * len(filtered_patients))
-    sql = "UPDATE patient SET last_checked = CURRENT_TIMESTAMP WHERE id IN (%s);" % placeholders
-    pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
-    connection = pg_hook.get_conn()
-    cursor = connection.cursor()
-    cursor.execute(sql, map(lambda filtered_patient: filtered_patient[0], filtered_patients))
-    patients = cursor.fetchall()
-
 with DAG(
     'train_and_save_personal_ai_models',
     default_args=default_args,
@@ -112,17 +78,46 @@ with DAG(
     start_date=days_ago(2),
     tags=['train', 'save', 'ai_models', 'kuberenetes'],
 ) as dag:
-    # 1. [PythonOperator] Get patients 
+    # 1. [PythonOperator] Get patients
+    def get_all_patients(**kwargs):
+        sql = "SELECT id, last_checked FROM patient;"
+        pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
+        connection = pg_hook.get_conn()
+        cursor = connection.cursor()
+        cursor.execute(sql)
+        patients = cursor.fetchall()
+        task_instance = kwargs['task_instance']
+        task_instance.xcom_push(key='patients', value=list(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients)))
+
     get_all_patients = PythonOperator(
         task_id='get_all_patients',
         python_callable=get_all_patients
     )
 
     # # 2. [PythonOperator] Get filtered patients
+    def get_all_filtered_patients(**kwargs):
+        task_instance = kwargs['task_instance']
+        patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_patients', key='patients')))
+        # filtered_patients = list(map(lambda patient: (datetime.now() - patient[1]).days >= 7, patients))
+        filtered_patients = patients
+        task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients)))
+
     get_all_filtered_patients = PythonOperator(
         task_id='get_all_filtered_patients',
         python_callable=get_all_filtered_patients
     )
+
+    def mark_patients(**kwargs):
+        task_instance = kwargs['task_instance']
+        filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
+        placeholder = '?'
+        placeholders = ', '.join(placeholder * len(filtered_patients))
+        sql = "UPDATE patient SET last_checked = CURRENT_TIMESTAMP WHERE id IN (%s);" % placeholders
+        pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
+        connection = pg_hook.get_conn()
+        cursor = connection.cursor()
+        cursor.execute(sql, map(lambda filtered_patient: filtered_patient[0], filtered_patients))
+        patients = cursor.fetchall()
 
     mark_patients = PythonOperator(
         task_id='mark_patients',
