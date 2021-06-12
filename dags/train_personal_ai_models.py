@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import timedelta
+from datetime import timedelta, datetime
 from textwrap import dedent
 
 # The DAG object; we'll need this to instantiate a DAG
@@ -8,6 +8,7 @@ from airflow import DAG
 # Operators; we need this to operate!
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
 from airflow.operators.python_operator import PythonOperator
+from airflow.operators.bash_operator import BashOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.dates import days_ago
 
@@ -42,15 +43,39 @@ default_args = {
 }
 
 def get_all_patients():
-    sql = "SELECT * FROM patient"
+    sql = "SELECT id, last_checked FROM patient;"
     pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
     connection = pg_hook.get_conn()
     cursor = connection.cursor()
     cursor.execute(sql)
-    sources = cursor.fetchall()
-    for source in sources:
-        print("Source: {0} - activated: {1}".format(source[0], source[1]))
-    return sources
+    patients = cursor.fetchall()
+    print(patients)
+    task_instance = kwargs['task_instance']
+    task_instance.xcom_push(key='patients', value=patients)
+
+def days_between(d1, d2):
+    d1 = datetime.strptime(d1, "%Y-%m-%d")
+    d2 = datetime.strptime(d2, "%Y-%m-%d")
+    return abs((d2 - d1).days)
+
+def get_all_filtered_patients(**kwargs):
+    task_instance = kwargs['task_instance']
+    patients = task_instance.xcom_pull(task_ids='get_all_patients', key='patients')
+    filtered_patients = map(lambda patient: days_between(patient[0], datetime.now()) > 7, patients)
+    print(filtered_patients)
+    task_instance.xcom_push(key='filtered_patients', value=filtered_patients)
+
+def mark_patients(**kwargs):
+    task_instance = kwargs['task_instance']
+    filtered_patients = task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')
+    placeholder = '?'
+    placeholders = ', '.join(placeholder * len(filtered_patients))
+    sql = "UPDATE patient SET last_checked = CURRENT_TIMESTAMP WHERE id IN (%s);" % placeholders
+    pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
+    connection = pg_hook.get_conn()
+    cursor = connection.cursor()
+    cursor.execute(sql, map(lambda filtered_patient: filtered_patient[0], filtered_patients))
+    patients = cursor.fetchall()
 
 with DAG(
     'train_and_save_personal_ai_models',
@@ -61,38 +86,21 @@ with DAG(
     tags=['train', 'save', 'ai_models', 'kuberenetes'],
 ) as dag:
     # 1. [PythonOperator] Get patients 
-    patients = []
-
-    hook_task = PythonOperator(
-        task_id='hook_task',
+    get_all_patients = PythonOperator(
+        task_id='get_all_patients',
         python_callable=get_all_patients
     )
 
-    # def t1_callable(**kwargs):
-    #     task_instance = kwargs['task_instance']
-    #     task_instance.xcom_push(key='test', value=[1, "tweee", { "kek": "kek" }])
+    # # 2. [PythonOperator] Get filtered patients
+    get_all_filtered_patients = PythonOperator(
+        task_id='get_all_filtered_patients',
+        python_callable=get_all_filtered_patients
+    )
 
-    # t1 = PythonOperator(
-    #     task_id='t1',
-    #     provide_context=True,
-    #     python_callable=t1_callable,
-    #     dag=dag
-    # )
-
-    # def t2_callable(**kwargs):
-    #     task_instance = kwargs['task_instance']
-    #     value = task_instance.xcom_pull(task_ids='t1', key='test')
-    #     print(value)
-
-    # t2 = PythonOperator(
-    #     task_id='t2',
-    #     provide_context=True,
-    #     python_callable=t2_callable,
-    #     dag=dag
-    # )
-
-    # # 2. [PythonOperator] Get logs from the patients in user buckets
-    # logs = []
+    mark_patients = PythonOperator(
+        task_id='mark_patients',
+        python_callable=mark_patients
+    )
 
     # # 3. [PythonOperator] Filter patients if they have no new files
     # processed_patients = []
@@ -121,5 +129,5 @@ with DAG(
 
 
     # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
-    hook_task
+    get_all_patients >> get_all_filtered_patients >> mark_patients
 
