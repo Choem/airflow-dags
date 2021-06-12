@@ -119,10 +119,14 @@ with DAG(
 
         filtered_patients_with_logs = []
         client = get_minio_client()
+        print('a')
         for filtered_patient in filtered_patients:
+            print('b')
             print(filtered_patient[0])
             objects = client.list_objects(str(filtered_patient[0]), prefix='user-')
+            print('c')
             if len(objects) > 0:
+                print('d')
                 filtered_patients_with_logs.append(filtered_patient)
         print(len(filtered_patients_with_logs))
         task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients_with_logs)))
