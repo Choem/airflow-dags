@@ -60,9 +60,9 @@ with DAG(
         
         # Execute query
         result = client.execute(query, variable_values=params)
-        raise result
+        
         # Get patient ids
-        return result['getActivePatients'])
+        return result['getActivePatients']
 
     # Enumerate over patient ids returned from the file service query
     for index, patient_id in enumerate(get_patient_ids()):
