@@ -107,8 +107,7 @@ with DAG(
 
     get_all_patients = PythonOperator(
         task_id='get_all_patients',
-        python_callable=get_all_patients,
-        dag
+        python_callable=get_all_patients
     )
 
     # 2. [PythonOperator] Get filtered patients
