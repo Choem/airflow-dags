@@ -32,7 +32,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v17'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v18'],
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
@@ -60,9 +60,9 @@ with DAG(
         
         # Execute query
         result = client.execute(query, variable_values=params)
-        print(result)
-        # Map objects to patient ids
-        return list(map(lambda json_object: json_object, result))
+
+        # Get patient ids
+        return result['getActivePatients'])
 
     # Enumerate over patient ids returned from the file service query
     for index, patient_id in enumerate(get_patient_ids()):
