@@ -140,7 +140,7 @@ with DAG(
             user_id = str(p[0])
 
             KubernetesPodOperator(
-                task_id='train_and_save_model_user_%s' % user_id
+                task_id='train_and_save_model_user_%s' % user_id,
                 name='Train and save a personal model for a patient',
                 namespace='default',
                 env_vars={ 
