@@ -33,7 +33,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v7'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v8'],
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
@@ -51,12 +51,12 @@ with DAG(
                 task_id='train_and_save_model_task_group_%s' % index,
                 name='train_and_save_model_task_group_%s' % index,
                 namespace='default',
-                # env_vars={ 
-                #     'USER_ID': patient_id,
-                #     'MINIO_ACCESS_KEY': 'admin-user',
-                #     'MINIO_SECRET_KEY': 'admin-user' 
-                # },
-                image="hello-world:latest",
+                env_vars={ 
+                    'USER_ID': patient_id,
+                    'MINIO_ACCESS_KEY': 'admin-user',
+                    'MINIO_SECRET_KEY': 'admin-user' 
+                },
+                image="choem/train_and_save_personal_model:v1",
                 image_pull_policy="Always",
                 is_delete_operator_pod=False,
                 get_logs=True,
