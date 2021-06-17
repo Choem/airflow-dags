@@ -138,7 +138,7 @@ with DAG(
 
         for p in filtered_patients:
             user_id = str(p[0])
-
+            print(user_id)
             KubernetesPodOperator(
                 task_id='train_and_save_model_user_%s' % user_id,
                 name='train_and_save_model_user_%s' % user_id,
