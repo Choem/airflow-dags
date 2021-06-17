@@ -52,7 +52,7 @@ with DAG(
                 name='train_and_save_model_task_group_%s' % index,
                 namespace='default',
                 env_vars={ 
-                    'USER_ID': patient_id,
+                    'USER_ID': str(patient_id),
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user' 
                 },
