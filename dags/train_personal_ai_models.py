@@ -12,6 +12,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.operators.bash_operator import BashOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.dates import days_ago
+from airflow.utils.task_group import TaskGroup
 
 from minio import Minio
 
@@ -90,93 +91,126 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v5'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v6'],
 ) as dag:
-    # 1. [PythonOperator] Get patients
-    def get_all_patients(**kwargs):
-        sql = "SELECT id, last_checked FROM patient;"
-        pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
-        connection = pg_hook.get_conn()
-        cursor = connection.cursor()
-        cursor.execute(sql)
-        patients = cursor.fetchall()
-        cursor.close()
-        connection.close()
-        task_instance = kwargs['task_instance']
-        task_instance.xcom_push(key='patients', value=list(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients)))
+    # # 1. [PythonOperator] Get patients
+    # def get_all_patients(**kwargs):
+    #     sql = "SELECT id, last_checked FROM patient;"
+    #     pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
+    #     connection = pg_hook.get_conn()
+    #     cursor = connection.cursor()
+    #     cursor.execute(sql)
+    #     patients = cursor.fetchall()
+    #     cursor.close()
+    #     connection.close()
+    #     task_instance = kwargs['task_instance']
+    #     task_instance.xcom_push(key='patients', value=list(map(lambda patient: json.dumps(patient, cls=DateTimeEncoder), patients)))
 
-    get_all_patients = PythonOperator(
-        task_id='get_all_patients',
-        python_callable=get_all_patients
-    )
+    # get_all_patients = PythonOperator(
+    #     task_id='get_all_patients',
+    #     python_callable=get_all_patients
+    # )
 
-    # 2. [PythonOperator] Get filtered patients
-    def get_all_filtered_patients(**kwargs):
-        task_instance = kwargs['task_instance']
-        patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_patients', key='patients')))
-        # filtered_patients = list(map(lambda patient: (datetime.now() - patient[1]).days >= 7, patients))
-        filtered_patients = patients
+    # # 2. [PythonOperator] Get filtered patients
+    # def get_all_filtered_patients(**kwargs):
+    #     task_instance = kwargs['task_instance']
+    #     patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_patients', key='patients')))
+    #     # filtered_patients = list(map(lambda patient: (datetime.now() - patient[1]).days >= 7, patients))
+    #     filtered_patients = patients
 
-        filtered_patients_with_logs = []
-        client = get_minio_client()
-        for filtered_patient in filtered_patients:
-            objects = client.list_objects('user-%s' % str(filtered_patient[0]))
-            if len(list(objects)) > 0:
-                filtered_patients_with_logs.append(filtered_patient)
+    #     filtered_patients_with_logs = []
+    #     client = get_minio_client()
+    #     for filtered_patient in filtered_patients:
+    #         objects = client.list_objects('user-%s' % str(filtered_patient[0]))
+    #         if len(list(objects)) > 0:
+    #             filtered_patients_with_logs.append(filtered_patient)
 
-        task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients_with_logs)))
+    #     task_instance.xcom_push(key='filtered_patients', value=list(map(lambda filtered_patient: json.dumps(filtered_patient, cls=DateTimeEncoder), filtered_patients_with_logs)))
 
-    get_all_filtered_patients = PythonOperator(
-        task_id='get_all_filtered_patients',
-        python_callable=get_all_filtered_patients
-    )
+    # get_all_filtered_patients = PythonOperator(
+    #     task_id='get_all_filtered_patients',
+    #     python_callable=get_all_filtered_patients
+    # )
 
-    # 4. [KubernetesPodOperator] Train and save workflow
-    def train_and_save_models(**kwargs):
-        task_instance = kwargs['task_instance']
-        filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
+    # # 4. [KubernetesPodOperator] Train and save workflow
+    # def train_and_save_models(**kwargs):
+    #     task_instance = kwargs['task_instance']
+    #     filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
 
-        train_and_save_model_tasks = []
+    #     train_and_save_model_tasks = []
 
-        for p in filtered_patients:
-            user_id = str(p[0])
+    #     for p in filtered_patients:
+    #         user_id = str(p[0])
             
-            train_and_save_model_tasks.append(KubernetesPodOperator(
-                task_id='train_and_save_model_user_%s' % user_id,
-                name='train_and_save_model_user_%s' % user_id,
+    #         train_and_save_model_tasks.append(KubernetesPodOperator(
+    #             task_id='train_and_save_model_user_%s' % user_id,
+    #             name='train_and_save_model_user_%s' % user_id,
+    #             namespace='default',
+    #             env_vars={ 
+    #                 'USER_ID': user_id,
+    #                 'MINIO_ACCESS_KEY': 'admin-user',
+    #                 'MINIO_SECRET_KEY': 'admin-user' 
+    #             },
+    #             image="choem/train_and_save_personal_model:v1",
+    #             image_pull_policy="Always",
+    #             is_delete_operator_pod=False,
+    #             get_logs=True,
+    #             dag=dag
+    #         ))
+        
+    #     return train_and_save_model_tasks
+
+    # # 5. [PythonOperator] Mark each patient with current date
+    # def mark_patients(**kwargs):
+    #     task_instance = kwargs['task_instance']
+    #     filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
+    #     params = list(map(lambda filtered_patient: str(filtered_patient[0]), filtered_patients))
+    #     sql = "UPDATE patient SET last_checked = CURRENT_TIMESTAMP WHERE id IN (%s);" % ','.join(params)
+    #     pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
+    #     connection = pg_hook.get_conn()
+    #     cursor = connection.cursor()
+    #     cursor.execute(sql)
+    #     connection.commit()
+    #     cursor.close()
+    #     connection.close()
+
+    # mark_patients = PythonOperator(
+    #     task_id='mark_patients',
+    #     python_callable=mark_patients
+    # )
+
+    def get_patient_ids():
+        # GraphQL call
+        return [1, 2]
+
+    for index, patient_id in enumerate(get_patient_ids()):
+        print(index, patient_id)
+
+        with TaskGroup(group_id='train_and_save_model_group_%s' % index) as task_group:
+            start_task_group = DummyOperator(
+                task_id='start_task_group_%s' % index,
+                dag=dag
+            )
+
+            train_and_save_model_task_group = KubernetesPodOperator(
+                task_id='train_and_save_model_task_group_%s' % index,
+                name='train_and_save_model_task_group_%s' % index,
                 namespace='default',
                 env_vars={ 
-                    'USER_ID': user_id,
+                    'USER_ID': patient_id,
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user' 
                 },
                 image="choem/train_and_save_personal_model:v1",
                 image_pull_policy="Always",
-                is_delete_operator_pod=False,
+                is_delete_operator_pod=True,
                 get_logs=True,
                 dag=dag
-            ))
-        
-        return train_and_save_model_tasks
+            )
 
-    # 5. [PythonOperator] Mark each patient with current date
-    def mark_patients(**kwargs):
-        task_instance = kwargs['task_instance']
-        filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
-        params = list(map(lambda filtered_patient: str(filtered_patient[0]), filtered_patients))
-        sql = "UPDATE patient SET last_checked = CURRENT_TIMESTAMP WHERE id IN (%s);" % ','.join(params)
-        pg_hook = PostgresHook(postgres_conn_id='patient-database', schema='patient')
-        connection = pg_hook.get_conn()
-        cursor = connection.cursor()
-        cursor.execute(sql)
-        connection.commit()
-        cursor.close()
-        connection.close()
+            end_task_group = DummyOperator(
+                task_id='end_task_group_%s' % index,
+                dag=dag
+            )
 
-    mark_patients = PythonOperator(
-        task_id='mark_patients',
-        python_callable=mark_patients
-    )
-
-    get_all_patients >> get_all_filtered_patients >> train_and_save_models >> mark_patients
-
+            start_task_group >> train_and_save_model_task_group >> end_task_group
