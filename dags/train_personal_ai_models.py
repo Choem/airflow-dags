@@ -85,7 +85,7 @@ default_args = {
 }
 
 with DAG(
-    'train_and_save_personal_ai_models:v1',
+    'train_and_save_personal_ai_models_v1',
     default_args=default_args,
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
@@ -138,7 +138,6 @@ with DAG(
 
         for p in filtered_patients:
             KubernetesPodOperator(
-                task_id='train_and_save_personal_model',
                 name='Train and save a personal model for a patient',
                 namespace='default',
                 env_vars={ 
