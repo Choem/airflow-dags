@@ -34,7 +34,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v16'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v17'],
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
@@ -58,7 +58,7 @@ with DAG(
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user' 
                 },
-                image="k3d-airflow-backend-registry:5000/train_and_save_personal_model:v1",
+                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v3",
                 image_pull_policy="IfNotPresent",
                 is_delete_operator_pod=False,
                 get_logs=True,
