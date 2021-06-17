@@ -151,7 +151,7 @@ with DAG(
                 image="choem/train_and_save_personal_model:v1",
                 image_pull_policy="Always",
                 is_delete_operator_pod=True,
-                get_logs=True,
+                get_logs=False,
                 dag=dag
             )
 
