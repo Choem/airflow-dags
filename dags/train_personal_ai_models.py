@@ -85,7 +85,7 @@ default_args = {
 }
 
 with DAG(
-    'train_and_save_personal_ai_models',
+    'train_and_save_personal_ai_models:v1',
     default_args=default_args,
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
@@ -141,7 +141,7 @@ with DAG(
                 task_id='train_and_save_personal_model',
                 name='Train and save a personal model for a patient',
                 namespace='default',
-                envs={ 
+                env_vars={ 
                     'USER_ID': str(p[0]),
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user' 
