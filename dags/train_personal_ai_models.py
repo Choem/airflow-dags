@@ -41,6 +41,7 @@ with DAG(
         # GraphQL call
         return [1, 2]
 
+    # Enumerate over patient ids returned from the file service query
     for index, patient_id in enumerate(get_patient_ids()):
         with TaskGroup(group_id='train_and_save_model_group_%s' % index) as task_group:
             start_task_group = DummyOperator(
@@ -48,19 +49,17 @@ with DAG(
                 dag=dag
             )
 
+            # Start up a k8s pod to train and save personal AI model
             train_and_save_model_task_group = KubernetesPodOperator(
                 task_id='train_and_save_model_task_group_%s' % index,
                 name='train_and_save_model_task_group_%s' % index,
                 namespace='default',
-                # image_pull_secrets=[k8s.V1LocalObjectReference('docker-secret')],
                 env_vars={ 
                     'USER_ID': str(patient_id),
-                    'MINIO_ACCESS_KEY': 'admin-user',
-                    'MINIO_SECRET_KEY': 'admin-user' 
                 },
-                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v3",
+                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v4",
                 image_pull_policy="IfNotPresent",
-                is_delete_operator_pod=False,
+                is_delete_operator_pod=True,
                 get_logs=True,
                 dag=dag
             )
