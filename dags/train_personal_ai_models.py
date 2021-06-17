@@ -90,7 +90,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v4'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v5'],
 ) as dag:
     # 1. [PythonOperator] Get patients
     def get_all_patients(**kwargs):
