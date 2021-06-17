@@ -60,7 +60,7 @@ with DAG(
         
         # Execute query
         result = client.execute(query, variable_values=params)
-
+        print(result)
         # Map objects to patient ids
         return list(map(lambda json_object: json_object, result))
 
