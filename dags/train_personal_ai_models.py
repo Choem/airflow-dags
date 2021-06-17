@@ -34,7 +34,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v11'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v13'],
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
@@ -52,14 +52,14 @@ with DAG(
                 task_id='train_and_save_model_task_group_%s' % index,
                 name='train_and_save_model_task_group_%s' % index,
                 namespace='default',
-                image_pull_secrets=[k8s.V1LocalObjectReference('docker-secret')],
+                # image_pull_secrets=[k8s.V1LocalObjectReference('docker-secret')],
                 env_vars={ 
                     'USER_ID': str(patient_id),
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user' 
                 },
-                image="choem/train_and_save_personal_model:v1",
-                image_pull_policy="Always",
+                image="localhost:5000/train_and_save_personal_model:v1",
+                image_pull_policy="IfNotPresent",
                 is_delete_operator_pod=False,
                 get_logs=True,
                 dag=dag
