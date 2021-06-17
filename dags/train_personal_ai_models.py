@@ -154,7 +154,7 @@ with DAG(
                 dag=dag
             )
 
-    train_and_save_personal_model = PythonOperator(
+    train_and_save_personal_models = PythonOperator(
         task_id='train_and_save_personal_models'
         python_callable=train_and_save_models
     )
@@ -180,5 +180,5 @@ with DAG(
 
 
     # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
-    get_all_patients >> get_all_filtered_patients >> processing_tasks >> mark_patients
+    get_all_patients >> get_all_filtered_patients >> train_and_save_personal_models >> mark_patients
 
