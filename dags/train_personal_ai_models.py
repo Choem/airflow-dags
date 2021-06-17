@@ -90,7 +90,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v2'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v3'],
 ) as dag:
     # 1. [PythonOperator] Get patients
     def get_all_patients(**kwargs):
@@ -132,14 +132,15 @@ with DAG(
     )
 
     # 4. [KubernetesPodOperator] Train and save workflow
+    processing_users = []
     def train_and_save_models(**kwargs):
         task_instance = kwargs['task_instance']
         filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
 
         for p in filtered_patients:
             user_id = str(p[0])
-            print(user_id)
-            KubernetesPodOperator(
+            
+            processing_users.append(KubernetesPodOperator(
                 task_id='train_and_save_model_user_%s' % user_id,
                 name='train_and_save_model_user_%s' % user_id,
                 namespace='default',
@@ -153,7 +154,7 @@ with DAG(
                 is_delete_operator_pod=False,
                 get_logs=True,
                 dag=dag
-            )
+            ))
 
     train_and_save_personal_models = PythonOperator(
         task_id='train_and_save_personal_models',
@@ -181,5 +182,5 @@ with DAG(
 
 
     # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
-    get_all_patients >> get_all_filtered_patients >> train_and_save_personal_models >> mark_patients
+    get_all_patients >> get_all_filtered_patients >> train_and_save_personal_models >> processing_users >> mark_patients
 
