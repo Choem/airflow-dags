@@ -18,7 +18,7 @@ from gql.transport.requests import RequestsHTTPTransport
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'email': ['admin-user@wavyhealth.com'],
+    'email': ['email@test.com'],
     'email_on_failure': False,
     'email_on_retry': False,
     'retries': 1,
