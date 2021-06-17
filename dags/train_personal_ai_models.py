@@ -43,14 +43,16 @@ with DAG(
 
         # Define query
         query = gql("""
-            query GetActivePatients($startDate: Date!, $endDate: Date!) {
+            query GetActivePatients($startDate: String!, $endDate: String!) {
                 getActivePatients(startDate: $startDate, endDate: $endDate)
             }
         """)
 
         # Define parameters
         now = datetime.now()
-        params = { "startDate": now - timedelta(days=7), "endDate": now }
+        one_week_ago = now - timedelta(days=7)
+
+        params = { "startDate": one_week_ago.isoformat(), "endDate": now.isoformat() }
         
         # Execute query
         result = client.execute(query, variable_values=params)
