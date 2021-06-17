@@ -38,7 +38,7 @@ with DAG(
     def get_patient_ids():
         # Define transport protocol
         transport = RequestsHTTPTransport(
-            url='http://file-service/file/graphql/query', 
+            url='http://file-service:4000/file/graphql/query', 
             use_json=True,
         )
 
