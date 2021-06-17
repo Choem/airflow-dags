@@ -60,7 +60,7 @@ with DAG(
         
         # Execute query
         result = client.execute(query, variable_values=params)
-
+        raise result
         # Get patient ids
         return result['getActivePatients'])
 
