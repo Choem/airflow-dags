@@ -137,11 +137,14 @@ with DAG(
         filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
 
         for p in filtered_patients:
+            user_id = str(p[0])
+
             KubernetesPodOperator(
+                task_id='train_and_save_model_user_%s' % user_id
                 name='Train and save a personal model for a patient',
                 namespace='default',
                 env_vars={ 
-                    'USER_ID': str(p[0]),
+                    'USER_ID': user_id,
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user' 
                 },
