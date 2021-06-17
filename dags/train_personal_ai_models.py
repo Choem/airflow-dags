@@ -90,7 +90,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v3'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v4'],
 ) as dag:
     # 1. [PythonOperator] Get patients
     def get_all_patients(**kwargs):
@@ -180,7 +180,25 @@ with DAG(
         python_callable=mark_patients
     )
 
+    k = []
+    for i in range(10):
+        processing_users.append(KubernetesPodOperator(
+            task_id='test_%s' % str(i),
+            name='test_%s' % str(i),
+            namespace='default',
+            env_vars={ 
+                'USER_ID': str(i),
+                'MINIO_ACCESS_KEY': 'admin-user',
+                'MINIO_SECRET_KEY': 'admin-user' 
+            },
+            image="choem/train_and_save_personal_model:v1",
+            image_pull_policy="Always",
+            is_delete_operator_pod=False,
+            get_logs=True,
+            dag=dag
+        ))
+
 
     # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
-    get_all_patients >> get_all_filtered_patients >> train_and_save_personal_models >> processing_users >> mark_patients
+    get_all_patients >> k
 
