@@ -37,7 +37,7 @@ with DAG(
     # Gets the patient ids from the patient service
     def get_patient_ids():
         # Define transport protocol
-        transport = RequestsHTTPTransport(url='file-service', use_json=True)
+        transport = RequestsHTTPTransport(url='http://file-service:4000/', use_json=True)
 
         # Create GraphQL client
         client = Client(transport=transport, fetch_schema_from_transport=True)
