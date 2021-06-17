@@ -1,22 +1,19 @@
+# Standard imports
 import json
-from pathlib import Path
 from datetime import timedelta, datetime
-from textwrap import dedent
 
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
 
 # Operators; we need this to operate!
 from airflow.contrib.operators.kubernetes_pod_operator import KubernetesPodOperator
-from airflow.operators.python_operator import PythonOperator
-from airflow.operators.bash_operator import BashOperator
 from airflow.operators.dummy import DummyOperator 
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-from airflow.utils.dates import days_ago
 from airflow.utils.task_group import TaskGroup
 from kubernetes.client import models as k8s
 
-from minio import Minio
+# Gql; For calling our services
+from gql import gql, Client
+from gql.transport.requests import RequestsHTTPTransport
 
 default_args = {
     'owner': 'airflow',
@@ -38,8 +35,28 @@ with DAG(
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
-        # GraphQL call
-        return [1, 2]
+        # Define transport protocol
+        transport = RequestsHTTPTransport(url='file-service', use_json=True)
+
+        # Create GraphQL client
+        client = Client(transport=transport, fetch_schema_from_transport=True)
+
+        # Define query
+        query = gql("""
+            query GetActivePatients($startDate: Date!, $endDate: Date!) {
+                getActivePatients(startDate: $startDate, endDate: $endDate)
+            }
+        """)
+
+        # Define parameters
+        now = datetime.now()
+        params = { "startDate": now - timedelta(days=7), "endDate": now }
+        
+        # Execute query
+        result = client.execute(query, variable_values=params)
+
+        # Map objects to patient ids
+        return list(map(lambda json_object: json_object, result))
 
     # Enumerate over patient ids returned from the file service query
     for index, patient_id in enumerate(get_patient_ids()):
