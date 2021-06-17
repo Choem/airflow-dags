@@ -141,7 +141,7 @@ with DAG(
 
             KubernetesPodOperator(
                 task_id='train_and_save_model_user_%s' % user_id,
-                name='Train and save a personal model for a patient',
+                name='train_and_save_model_user_%s' % user_id,
                 namespace='default',
                 env_vars={ 
                     'USER_ID': user_id,
