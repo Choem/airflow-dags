@@ -1,6 +1,7 @@
 # Standard imports
 import json
 from datetime import timedelta, datetime
+from airflow.utils.dates import days_ago
 
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
