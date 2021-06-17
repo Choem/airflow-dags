@@ -85,12 +85,12 @@ default_args = {
 }
 
 with DAG(
-    'train_and_save_personal_ai_models_v1',
+    'train_and_save_personal_ai_models',
     default_args=default_args,
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v1'],
 ) as dag:
     # 1. [PythonOperator] Get patients
     def get_all_patients(**kwargs):
@@ -150,8 +150,8 @@ with DAG(
                 },
                 image="choem/train_and_save_personal_model:v1",
                 image_pull_policy="Always",
-                is_delete_operator_pod=True,
-                get_logs=False,
+                is_delete_operator_pod=False,
+                get_logs=True,
                 dag=dag
             )
 
