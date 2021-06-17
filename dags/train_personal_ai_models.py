@@ -14,6 +14,7 @@ from airflow.operators.dummy import DummyOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.utils.dates import days_ago
 from airflow.utils.task_group import TaskGroup
+from kubernetes.client import models as k8s
 
 from minio import Minio
 
@@ -33,7 +34,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v10'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v11'],
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
