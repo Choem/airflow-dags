@@ -142,7 +142,7 @@ with DAG(
                 name='Train and save a personal model for a patient',
                 namespace='default',
                 envs={ 
-                    'USER_ID': str(patient[0]),
+                    'USER_ID': str(p[0]),
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user' 
                 },
