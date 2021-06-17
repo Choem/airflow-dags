@@ -38,10 +38,8 @@ with DAG(
     def get_patient_ids():
         # Define transport protocol
         transport = RequestsHTTPTransport(
-            url='http://file-service.default.svc.cluster.local:4000/graphql/query', 
+            url='http://file-service/file/graphql/query', 
             use_json=True,
-            verify=False,
-            retries=3 
         )
 
         # Create GraphQL client
