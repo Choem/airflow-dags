@@ -132,15 +132,16 @@ with DAG(
     )
 
     # 4. [KubernetesPodOperator] Train and save workflow
-    processing_users = []
     def train_and_save_models(**kwargs):
         task_instance = kwargs['task_instance']
         filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
 
+        train_and_save_model_tasks = []
+
         for p in filtered_patients:
             user_id = str(p[0])
             
-            processing_users.append(KubernetesPodOperator(
+            train_and_save_model_tasks.append(KubernetesPodOperator(
                 task_id='train_and_save_model_user_%s' % user_id,
                 name='train_and_save_model_user_%s' % user_id,
                 namespace='default',
@@ -155,11 +156,8 @@ with DAG(
                 get_logs=True,
                 dag=dag
             ))
-
-    train_and_save_personal_models = PythonOperator(
-        task_id='train_and_save_personal_models',
-        python_callable=train_and_save_models
-    )
+        
+        return train_and_save_model_tasks
 
     # 5. [PythonOperator] Mark each patient with current date
     def mark_patients(**kwargs):
@@ -180,25 +178,5 @@ with DAG(
         python_callable=mark_patients
     )
 
-    k = []
-    for i in range(10):
-        processing_users.append(KubernetesPodOperator(
-            task_id='test_%s' % str(i),
-            name='test_%s' % str(i),
-            namespace='default',
-            env_vars={ 
-                'USER_ID': str(i),
-                'MINIO_ACCESS_KEY': 'admin-user',
-                'MINIO_SECRET_KEY': 'admin-user' 
-            },
-            image="choem/train_and_save_personal_model:v1",
-            image_pull_policy="Always",
-            is_delete_operator_pod=False,
-            get_logs=True,
-            dag=dag
-        ))
-
-
-    # get_patients >> get_logs >> process_patients >> process_logs >> processing_tasks >> mark_patients
-    get_all_patients >> k
+    get_all_patients >> get_all_filtered_patients >> train_and_save_models >> mark_patients
 
