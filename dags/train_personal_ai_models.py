@@ -155,7 +155,7 @@ with DAG(
             )
 
     train_and_save_personal_models = PythonOperator(
-        task_id='train_and_save_personal_models'
+        task_id='train_and_save_personal_models',
         python_callable=train_and_save_models
     )
 
