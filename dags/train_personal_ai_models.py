@@ -107,7 +107,8 @@ with DAG(
 
     get_all_patients = PythonOperator(
         task_id='get_all_patients',
-        python_callable=get_all_patients
+        python_callable=get_all_patients,
+        dag
     )
 
     # 2. [PythonOperator] Get filtered patients
@@ -132,23 +133,31 @@ with DAG(
     )
 
     # 4. [KubernetesPodOperator] Train and save workflow
-    processing_tasks = []
-    for patient in "{{ task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients') }}":
-        processing_tasks.append(KubernetesPodOperator(
-            task_id='train_and_save_personal_model',
-            name='Train and save a personal model for a patient',
-            namespace='default',
-            envs={ 
-                'USER_ID': str(patient[0]),
-                'MINIO_ACCESS_KEY': 'admin-user',
-                'MINIO_SECRET_KEY': 'admin-user' 
-            },
-            image="choem/train_and_save_personal_model:v1",
-            image_pull_policy="Always",
-            is_delete_operator_pod=True,
-            get_logs=True,
-            dag=dag
-        ))
+    def train_and_save_models(**kwargs):
+        task_instance = kwargs['task_instance']
+        filtered_patients = list(map(lambda patient: json.loads(patient, cls=DateTimeDecoder), task_instance.xcom_pull(task_ids='get_all_filtered_patients', key='filtered_patients')))
+
+        for p in filtered_patients:
+            KubernetesPodOperator(
+                task_id='train_and_save_personal_model',
+                name='Train and save a personal model for a patient',
+                namespace='default',
+                envs={ 
+                    'USER_ID': str(patient[0]),
+                    'MINIO_ACCESS_KEY': 'admin-user',
+                    'MINIO_SECRET_KEY': 'admin-user' 
+                },
+                image="choem/train_and_save_personal_model:v1",
+                image_pull_policy="Always",
+                is_delete_operator_pod=True,
+                get_logs=True,
+                dag=dag
+            )
+
+    train_and_save_personal_model = PythonOperator(
+        task_id='train_and_save_personal_models'
+        python_callable=train_and_save_models
+    )
 
     # 5. [PythonOperator] Mark each patient with current date
     def mark_patients(**kwargs):
