@@ -80,7 +80,7 @@ with DAG(
                 env_vars={ 
                     'PATIENT_ID': str(patient_id),
                 },
-                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v7",
+                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v8",
                 image_pull_policy="IfNotPresent",
                 is_delete_operator_pod=True,
                 get_logs=True,

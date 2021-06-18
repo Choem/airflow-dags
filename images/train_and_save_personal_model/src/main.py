@@ -119,10 +119,10 @@ def main():
     print(model)
     temp_dir_path = tempfile.TemporaryDirectory()
     print(temp_dir_path)
-    pickle.dump(model, open(os.path.join(temp_dir_path, 'model_%s.sav' % patient_id), 'wb'))
+    pickle.dump(model, open(os.path.join(temp_dir_path.name, 'model_%s.sav' % patient_id), 'wb'))
 
     # Save model
-    loaded_model = open(os.path.join(temp_dir_path, 'model_%s.sav' % patient_id), 'rb')
+    loaded_model = open(os.path.join(temp_dir_path.name, 'model_%s.sav' % patient_id), 'rb')
     save_model(model, patient_id, client)
 
 main()
