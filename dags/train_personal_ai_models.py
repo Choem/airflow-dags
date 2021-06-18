@@ -36,8 +36,8 @@ with DAG(
     tags=['train', 'save', 'ai_models', 'kuberenetes', 'v25'],
 ) as dag:
     # Bug with Airflow, secret gets mounted but not populated
-    minio_accesskey = Path("/opt/airflow/secrets/minio-secret/accesskey").read_text().strip()
-    minio_secretkey = Path("/opt/airflow/secrets/minio-secret/secretkey").read_text().strip()
+    # minio_accesskey = Path("/opt/airflow/secrets/minio-secret/acceskey").read_text().strip()
+    # minio_secretkey = Path("/opt/airflow/secrets/minio-secret/secretkey").read_text().strip()
 
     # Gets the patient ids from the patient service
     def get_patient_ids():
