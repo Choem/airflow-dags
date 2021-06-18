@@ -32,7 +32,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v22'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v23'],
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
@@ -80,7 +80,7 @@ with DAG(
                 env_vars={ 
                     'PATIENT_ID': str(patient_id),
                 },
-                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v8",
+                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v9",
                 image_pull_policy="IfNotPresent",
                 is_delete_operator_pod=True,
                 get_logs=True,

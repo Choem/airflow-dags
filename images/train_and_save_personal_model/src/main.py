@@ -58,22 +58,20 @@ def download_logs(patient_id, client):
     log_urls = result['getPatientLogs']
 
     # Create temp dir
-    temp_dir_path = tempfile.TemporaryDirectory()
+    os.mkdir('logs')
 
     # Iterate over log urls and download them in the temp dir
     for index, log_url in enumerate(log_urls):
 
         # Get file from log url and create a file in the temp dir
-        with urllib.request.urlopen(log_url) as response, open(os.path.join(temp_dir_path, "log_%s.csv" % str(index)), 'wb') as created_file:
+        with urllib.request.urlopen(log_url) as response, open(os.path.join('logs', "log_%s.csv" % str(index)), 'wb') as created_file:
 
             # Copy content of response to created file
             shutil.copyfileobj(response, created_file)
 
-    return temp_dir_path
-
-def prepare_data(temp_dir_path):
+def prepare_data():
     # Get all log files
-    logs = glob.glob(os.path.join(temp_dir_path, "*.csv"))
+    logs = glob.glob(os.path.join('logs', "*.csv"))
 
     # Concate them into one dataframe
     df = pd.concat((pd.read_csv(log) for log in logs))
@@ -104,11 +102,11 @@ def main():
     # Get GraphQL client
     client = get_graphql_client()
     
-    # # Download all logs of the patient
+    # Download all logs of the patient
     # temp_dir_path = download_logs(patient_id, client)
 
-    # # Prepare data
-    # df = prepare_data(temp_dir_path):
+    # Prepare data
+    # df = prepare_data():
 
     # Train model
     # model = train_model(df)
@@ -117,12 +115,12 @@ def main():
     clf = SVC()
     model = clf.fit(iris.data, iris.target)
     print(model)
-    temp_dir_path = tempfile.TemporaryDirectory()
-    print(temp_dir_path)
-    pickle.dump(model, open(os.path.join(temp_dir_path.name, 'model_%s.sav' % patient_id), 'wb'))
+    os.mkdir('model')
+
+    pickle.dump(model, open(os.path.join('model', 'model_%s.sav' % patient_id), 'wb'))
 
     # Save model
-    loaded_model = open(os.path.join(temp_dir_path.name, 'model_%s.sav' % patient_id), 'rb')
+    loaded_model = open(os.path.join('model', 'model_%s.sav' % patient_id), 'rb')
     save_model(model, patient_id, client)
 
 main()
