@@ -2,6 +2,7 @@
 import json
 from datetime import timedelta, datetime
 from airflow.utils.dates import days_ago
+from pathlib import Path
 
 # The DAG object; we'll need this to instantiate a DAG
 from airflow import DAG
@@ -32,8 +33,12 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v24'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v25'],
 ) as dag:
+    # Bug with Airflow, secret gets mounted but not populated
+    minio_accesskey = Path("/opt/airflow/secrets/minio-secret/accesskey").read_text().strip()
+    minio_secretkey = Path("/opt/airflow/secrets/minio-secret/secretkey").read_text().strip()
+
     # Gets the patient ids from the patient service
     def get_patient_ids():
         # Define transport protocol
@@ -79,8 +84,10 @@ with DAG(
                 namespace='default',
                 env_vars={ 
                     'PATIENT_ID': str(patient_id),
+                    'MINIO_ACCESS_KEY': 'admin-user',
+                    'MINIO_SECRET_KEY': 'admin-user'
                 },
-                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v10",
+                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v11",
                 image_pull_policy="IfNotPresent",
                 is_delete_operator_pod=True,
                 get_logs=True,

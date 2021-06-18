@@ -5,23 +5,19 @@ import shutil
 import glob
 import pickle
 import pandas as pd  
-from datetime import datetime
-from sklearn import datasets
-from sklearn.svm import SVC
+import datetime
 from gql import gql, Client
-from gql.transport.aiohttp import AIOHTTPTransport
+from gql.transport.requests import RequestsHTTPTransport
+
+# Test
+from sklearn.linear_model import LogisticRegression
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
 
 # Queries
 get_patient_logs_query = gql("""
     query GetPatientLogs($patientId: Int!) {
         getPatientLogs(patientId: $patientId)
-    }
-""")
-
-# Mutations
-save_patient_model_mutation = gql("""
-    mutation SavePatientModel($patientId: Int!, $file: Upload!) {
-        savePatientModel(patientId: $patientId, file: $file)
     }
 """)
 
@@ -40,32 +36,37 @@ class SaveModelError(Exception):
 
 # Functions
 def get_graphql_client():
-    transport = AIOHTTPTransport(
+    transport = RequestsHTTPTransport(
         url='http://file-service:4000/file/graphql/query', 
+        use_json=True
     )
 
     return Client(transport=transport, fetch_schema_from_transport=True)
 
-def download_logs(patient_id, client):
+def get_minio_client():
+    return Minio(
+        "minio:9000",
+        access_key=os.environ['MINIO_ACCESS_KEY'],
+        secret_key=os.environ['MINIO_SECRET_KEY'],
+    )
+
+def download_logs(patient_id, graphql_client, minio_client):
     # Set params
     params = { "patientId": patient_id }
 
     # Execute query with params
-    result = client.execute(get_patient_logs_query, variable_values=params)
+    result = graphql_client.execute(get_patient_logs_query, variable_values=params)
 
-    log_urls = result['getPatientLogs']
+    logs = result['getPatientLogs']
 
     # Create temp dir
     os.mkdir('logs')
 
     # Iterate over log urls and download them in the temp dir
-    for index, log_url in enumerate(log_urls):
+    for index, log in enumerate(logs):
 
-        # Get file from log url and create a file in the temp dir
-        with urllib.request.urlopen(log_url) as response, open(os.path.join('logs', "log_%s.csv" % str(index)), 'wb') as created_file:
-
-            # Copy content of response to created file
-            shutil.copyfileobj(response, created_file)
+        # Get files from Minio
+        minio_client.fget_object('user-%s/logs' % str(patient_id), log, "log_%s.csv" % str(index))
 
 def prepare_data():
     # Get all log files
@@ -76,29 +77,46 @@ def prepare_data():
 
     return df
 
-def train_model(df):
-    raise TrainModelError()
+def train_model(patient_id):
+    try:
+        iris = datasets.load_iris()
+        
+        Xtrain, Xtest, Ytrain, Ytest = train_test_split(data.data, data.target, test_size=0.3, random_state=4)
+        
+        model = LogisticRegression(
+            C=0.1, 
+            max_iter=20, 
+            fit_intercept=True, 
+            n_jobs=3, 
+            solver='liblinear'
+        )
+        model.fit(Xtrain, Ytrain)
+        
+        os.mkdir('model')
+        with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'wb') as file:
+            pickle.dump(model, file)
+    except:
+        raise TrainModelError()
 
 
-def save_model(model, patient_id, client):
-    # Set params
-    params = {
-        "upload": model, 
-        "patientId": patient_id 
-    }
-
-    # Execute mutation with params
-    result = client.execute(save_patient_model_mutation, variable_values=params, upload_files=True)
-
-    if result['savePatientModel'] is False:
+def save_model(patient_id, minio_client):
+    try:
+        with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
+            minio_client.fput_object(
+                "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), file
+            )
+    except:
         raise SaveModelError()
 
 def main():
-    # Get patient ID from environment vars
+    # Get environment vars
     patient_id = os.environ['PATIENT_ID']
-    
+
     # Get GraphQL client
-    client = get_graphql_client()
+    graphql_client = get_graphql_client()
+
+    # Get Minio client
+    minio_client = get_minio_client()
     
     # Download all logs of the patient
     # temp_dir_path = download_logs(patient_id, client)
@@ -107,18 +125,9 @@ def main():
     # df = prepare_data():
 
     # Train model
-    # model = train_model(df)
-    iris = datasets.load_iris()
-    print(iris.data[:3])
-    clf = SVC()
-    model = clf.fit(iris.data, iris.target)
-    print(model)
-    os.mkdir('model')
-
-    pickle.dump(model, open(os.path.join('model', 'model_%s.sav' % patient_id), 'wb'))
+    model = train_model(patient_id)
 
     # Save model
-    loaded_model = open(os.path.join('model', 'model_%s.sav' % patient_id), 'rb')
-    save_model(model, patient_id, client)
+    save_model(patient_id, minio_client)
 
 main()
