@@ -32,7 +32,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v21'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v22'],
 ) as dag:
     # Gets the patient ids from the patient service
     def get_patient_ids():
