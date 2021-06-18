@@ -8,6 +8,8 @@ import pandas as pd
 from datetime import datetime
 from sklearn import datasets
 from sklearn.svm import SVC
+from gql import gql, Client
+from gql.transport.requests import RequestsHTTPTransport
 
 
 # Queries
