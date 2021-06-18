@@ -8,6 +8,7 @@ import pandas as pd
 import datetime
 from gql import gql, Client
 from gql.transport.requests import RequestsHTTPTransport
+from minio import Minio
 
 # Test
 from sklearn.linear_model import LogisticRegression
