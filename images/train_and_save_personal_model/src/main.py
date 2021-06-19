@@ -67,7 +67,7 @@ def download_logs(patient_id, graphql_client, minio_client):
     for index, log in enumerate(logs):
 
         # Get files from Minio
-        minio_client.fget_object('user-%s/logs' % str(patient_id), log, "log_%s.csv" % str(index))
+        minio_client.fget_object('user-%s/logs' % str(patient_id), log, "logs/log_%s.csv" % str(index))
 
 def prepare_data():
     # Get all log files
@@ -80,7 +80,7 @@ def prepare_data():
 
 def train_model(patient_id):
     try:
-        iris = datasets.load_iris()
+        iris = load_iris()
         
         Xtrain, Xtest, Ytrain, Ytest = train_test_split(data.data, data.target, test_size=0.3, random_state=4)
         
