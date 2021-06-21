@@ -96,8 +96,6 @@ def train_model(patient_id):
         os.mkdir('model')
         with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'wb') as file:
             pickle.dump(model, file)
-
-        print(os.listdir('model'))
     except:
         raise TrainModelError('Something went wrong training the model')
 
@@ -105,7 +103,7 @@ def train_model(patient_id):
 def save_model(patient_id, minio_client):
     try:
         minio_client.fput_object(
-            "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), "model/model-%s.pkl" % str(patient_id)
+            "user-%s/models" % str(patient_id), "model_%s.pkl" % str(datetime.date.today()), "model/model_%s.pkl" % str(patient_id)
         )
         # with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
             
