@@ -101,13 +101,13 @@ def train_model(patient_id):
 
 
 def save_model(patient_id, minio_client):
-    # try:
-    #     with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
-    #         minio_client.fput_object(
-    #             "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), file
-    #         )
-    # except:
-    #     raise SaveModelError()
+    try:
+        with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
+            minio_client.fput_object(
+                "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), file
+            )
+    except:
+        raise SaveModelError()
 
 def main():
     # Get environment vars
@@ -129,6 +129,6 @@ def main():
     model = train_model(patient_id)
 
     # Save model
-    save_model(patient_id, minio_client)
+    # save_model(patient_id, minio_client)
 
 main()
