@@ -31,9 +31,9 @@ with DAG(
     'train_and_save_personal_ai_models',
     default_args=default_args,
     description='A DAG to train and save personal AI models',
-    schedule_interval='@once',
-    start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v37'],
+    schedule_interval='@weekly',
+    start_date=days_ago(1),
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v38'],
 ) as dag:
     # Bug with Airflow, secret gets mounted but not populated
     # minio_accesskey = Path("/opt/airflow/secrets/minio-secret/acceskey").read_text().strip()
