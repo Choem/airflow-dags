@@ -87,7 +87,7 @@ with DAG(
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user'
                 },
-                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v13",
+                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v14",
                 image_pull_policy="IfNotPresent",
                 is_delete_operator_pod=True,
                 get_logs=True,

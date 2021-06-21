@@ -82,7 +82,7 @@ def train_model(patient_id):
     try:
         iris = load_iris()
         
-        Xtrain, Xtest, Ytrain, Ytest = train_test_split(data.data, data.target, test_size=0.3, random_state=4)
+        Xtrain, Xtest, Ytrain, Ytest = train_test_split(iris.data, iris.target, test_size=0.3, random_state=4)
         
         model = LogisticRegression(
             C=0.1, 
