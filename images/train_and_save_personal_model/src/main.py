@@ -105,7 +105,7 @@ def train_model(patient_id):
 def save_model(patient_id, minio_client):
     try:
         minio_client.fput_object(
-            "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), "/model/model-%s.pkl" % str(datetime.date.today())
+            "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), "model/model-%s.pkl" % str(patient_id))
         )
         # with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
             
