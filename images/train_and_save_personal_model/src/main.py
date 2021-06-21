@@ -25,15 +25,15 @@ get_patient_logs_query = gql("""
 # Errors
 class DownloadLogsError(Exception):
     def __init__(self, message):
-        super().__init__(self.message)
+        super().__init__(message)
 
 class TrainModelError(Exception):
     def __init__(self):
-        super().__init__(self.message)
+        super().__init__(message)
 
 class SaveModelError(Exception):
     def __init__(self, message):
-        super().__init__(self.message)
+        super().__init__(message)
 
 # Functions
 def get_graphql_client():
@@ -103,7 +103,7 @@ def train_model(patient_id):
 def save_model(patient_id, minio_client):
     try:
         minio_client.fput_object(
-            "user-%s/models" % str(patient_id), "model_%s.pkl" % str(datetime.date.today()), "model/model_%s.pkl" % str(patient_id)
+            "user-%s" % str(patient_id), "models/model_%s.pkl" % str(datetime.date.today()), "model/model_%s.pkl" % str(patient_id)
         )
         # with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
             

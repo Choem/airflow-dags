@@ -33,7 +33,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@once',
     start_date=days_ago(2),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v35'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v36'],
 ) as dag:
     # Bug with Airflow, secret gets mounted but not populated
     # minio_accesskey = Path("/opt/airflow/secrets/minio-secret/acceskey").read_text().strip()
@@ -87,7 +87,7 @@ with DAG(
                     'MINIO_ACCESS_KEY': 'admin-user',
                     'MINIO_SECRET_KEY': 'admin-user'
                 },
-                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v21",
+                image="k3d-airflow-backend-registry:5000/train_personal_ai_model:v22",
                 image_pull_policy="IfNotPresent",
                 is_delete_operator_pod=True,
                 get_logs=True,
