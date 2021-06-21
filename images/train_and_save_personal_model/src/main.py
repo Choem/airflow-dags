@@ -24,15 +24,15 @@ get_patient_logs_query = gql("""
 
 # Errors
 class DownloadLogsError(Exception):
-    def __init__(self, message='Cannot download logs from bucket'):
+    def __init__(self, message):
         super().__init__(self.message)
 
 class TrainModelError(Exception):
-    def __init__(self, message='Something went wrong training the model'):
+    def __init__(self):
         super().__init__(self.message)
 
 class SaveModelError(Exception):
-    def __init__(self, message='Something went wrong saving the model'):
+    def __init__(self, message):
         super().__init__(self.message)
 
 # Functions
@@ -96,18 +96,21 @@ def train_model(patient_id):
         os.mkdir('model')
         with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'wb') as file:
             pickle.dump(model, file)
+
+        print(os.listdir('model'))
     except:
-        raise TrainModelError()
+        raise TrainModelError('Something went wrong training the model')
 
 
 def save_model(patient_id, minio_client):
     try:
-        with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
-            minio_client.fput_object(
-                "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), file
-            )
+        minio_client.fput_object(
+            "user-%s/models" % str(patient_id), "model-%s.pkl" % str(datetime.date.today()), "/model/model-%s.pkl" % str(datetime.date.today())
+        )
+        # with open(os.path.join('model', 'model_%s.pkl' % patient_id), 'rb') as file:
+            
     except:
-        raise SaveModelError()
+        raise SaveModelError('Something went wrong saving the model')
 
 def main():
     # Get environment vars
@@ -129,6 +132,6 @@ def main():
     model = train_model(patient_id)
 
     # Save model
-    # save_model(patient_id, minio_client)
+    save_model(patient_id, minio_client)
 
 main()
