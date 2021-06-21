@@ -18,7 +18,7 @@ from gql import gql, Client
 from gql.transport.requests import RequestsHTTPTransport
 
 default_args = {
-    'owner': 'airflow',
+    'owner': 'choem',
     'depends_on_past': False,
     'email': ['email@test.com'],
     'email_on_failure': False,
@@ -33,7 +33,7 @@ with DAG(
     description='A DAG to train and save personal AI models',
     schedule_interval='@weekly',
     start_date=days_ago(1),
-    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v38'],
+    tags=['train', 'save', 'ai_models', 'kuberenetes', 'v39'],
 ) as dag:
     # Bug with Airflow, secret gets mounted but not populated
     # minio_accesskey = Path("/opt/airflow/secrets/minio-secret/acceskey").read_text().strip()
